@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Article{% endblock %}
+
+{% block content %}
+<div class="row mb-2 article">
+    {% if article %}
+    <div class="col-md-6">
+        <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+                <h3 class="mb-0">{{article.title}}</h3>
+                <p class="mb-auto">{{article.description}}</p>
+            </div>
+            
+        </div>
+    </div>
+    {% endif %}
+    <hr>
+    
+    <!-- Comment Form -->
+    <div class="container pt-5">
+        <h1>Comment:</h1>
+        <form method="POST" id="comment-form">
+            {% csrf_token %}
+            <div class="form-group">
+            <label for="exampleInputEmail1">Name</label>
+            <input type="text" class="form-control" id="name" placeholder="Name">
+            </div>
+            <div class="form-group">
+                    <label for="exampleInputEmail1">Text</label>
+                    <textarea class="form-control" id="text" placeholder="Text"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+        <hr>
+        <div class="row mb-2 comments">
+                {% for comment in comments %}
+                <div class="col-sm-12">
+                    <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                        <div class="col p-4 d-flex flex-column position-static">
+                            <h5 class="mb-0">{{comment.name}}</h5>
+                            <p class="mb-auto">{{comment.text}}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+        </div>
+    </div>
+</div> 
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    
+    <script>
+        $(document).on('submit', '#comment-form',function(e){
+            e.preventDefault();
+            $.ajax({
+                type:'POST',
+                url:'{% url "article_detail" article.pk %}',
+                data:{
+                    name:$('#name').val(),
+                    text:$('#text').val(),
+                    csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val(),
+                    action: 'post'
+                },
+                success:function(json){
+                    document.getElementById("comment-form").reset();
+                    $(".comments").prepend('<div class="col-md-6">'+
+                        '<div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">' +
+                            '<div class="col p-4 d-flex flex-column position-static">' +
+                                '<h3 class="mb-0">' + json.name + '</h3>' +
+                                '<p class="mb-auto">' + json.text + '</p>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' 
+                    )
+                },
+                error : function(xhr,errmsg,err) {
+                $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
+                    " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+                console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+            }
+            });
+        });
+    </script>
+{% endblock %}
