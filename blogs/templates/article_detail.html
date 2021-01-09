@@ -5,10 +5,11 @@
 {% block content %}
 <div class="row mb-2 article">
     {% if article %}
-    <div class="col-md-6">
+    <div class="col-sm-12">
         <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
             <div class="col p-4 d-flex flex-column position-static">
                 <h3 class="mb-0">{{article.title}}</h3>
+                <h5>{{article.author}}</h5>
                 <p class="mb-auto">{{article.description}}</p>
             </div>
             
@@ -22,30 +23,48 @@
         <h1>Comment:</h1>
         <form method="POST" id="comment-form">
             {% csrf_token %}
-            <div class="form-group">
-            <label for="exampleInputEmail1">Name</label>
-            <input type="text" class="form-control" id="name" placeholder="Name">
-            </div>
+    
             <div class="form-group">
                     <label for="exampleInputEmail1">Text</label>
-                    <textarea class="form-control" id="text" placeholder="Text"></textarea>
+                    <textarea class="form-control" id="comment-text" placeholder="Text"></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
 
         <hr>
         <div class="row mb-2 comments">
-                {% for comment in comments %}
+            {% for comment in comments %}
                 <div class="col-sm-12">
                     <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                         <div class="col p-4 d-flex flex-column position-static">
-                            <h5 class="mb-0">{{comment.name}}</h5>
-                            <p class="mb-auto">{{comment.text}}</p>
+                            <h5 class="mb-0">{{comment.user.username}}</h5>
+                            <p class="mb-auto">{{comment.comment_text}}</p>
                         </div>
                     </div>
+                    <!-- Reply Section Start -->
+                <h3 class="my-4">Reply</h3>
+                <div class="reply-wrapper-{{comment.id}}">
+                    {% for reply in comment.replies.all %}
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <p>{{reply.reply_text}}</p>
+                            <p>
+                                <a href="#">{{reply.user}}</a>
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
+                <!-- Reply Form -->
+                <div class="card my-3">
+                    <h6 class="card-header">Add Reply</h6>
+                    <div class="card-body">
+                        <textarea class="form-control reply-text-{{comment.id}}"></textarea>
+                        <button type="button" data-comment="{{comment.id}}" class="btn btn-dark my-3 reply-comment">Submit</button>
+                    </div>
+                </div>
+    
                 {% endfor %}
-                
         </div>
     </div>
 </div> 
@@ -59,18 +78,18 @@
                 type:'POST',
                 url:'{% url "article_detail" article.pk %}',
                 data:{
-                    name:$('#name').val(),
-                    text:$('#text').val(),
+                    // name:$('#name').val(),
+                    comment_text:$('#comment-text').val(),
                     csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val(),
                     action: 'post'
                 },
                 success:function(json){
                     document.getElementById("comment-form").reset();
-                    $(".comments").prepend('<div class="col-md-6">'+
+                    $(".comments").prepend('<div class="col-sm-12">'+
                         '<div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">' +
                             '<div class="col p-4 d-flex flex-column position-static">' +
-                                '<h3 class="mb-0">' + json.name + '</h3>' +
-                                '<p class="mb-auto">' + json.text + '</p>' +
+                                '<h3 class="mb-0">' + json.user + '</h3>' +
+                                '<p class="mb-auto">' + json.comment_text + '</p>' +
                             '</div>' +
                         '</div>' +
                     '</div>' 
@@ -83,5 +102,44 @@
             }
             });
         });
+        $(document).ready(function(){
+        $(".reply-comment").on('click',function(){
+            // var _name=$('#name').val();
+            var _comment_id=$(this).data('comment');
+            var _reply=$(".reply-text-"+_comment_id).val();
+            // Ajax
+            $.ajax({
+                url:'{% url "reply-comment" %}',
+                type:"post",
+                data:{
+                    reply_text:_reply,
+                    comment_id:_comment_id,
+                    csrfmiddlewaretoken:"{{csrf_token}}"
+                },
+                dataType:'json',
+                beforeSend:function(){
+                    $(".reply-comment").addClass('disabled').text('saving...');
+                },
+                success:function(res){
+                    if(res.bool==true){
+                        $(".reply-text-"+_comment_id).val('');
+                        // Append Element
+                        var _html='<div class="card mb-2 animate__animated animate__bounce">\
+                        <div class="card-body">\
+                            <p>'+_reply+'</p>\
+                            <p>\
+                                <a href="#">{{request.user}}</a>\
+                            </p>\
+                        </div>\
+                    </div>';
+                    $(".reply-wrapper-"+_comment_id).append(_html);
+                    var prevCount=$(".reply-count-"+_comment_id).text();
+                    $(".reply-count-"+_comment_id).text(parseInt(prevCount)+1);
+                    }
+                    $(".reply-comment").removeClass('disabled').text('Submit');
+                }
+            });
+        });
+    });
     </script>
 {% endblock %}
