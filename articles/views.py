@@ -20,11 +20,14 @@ def create_article(request):
         title = request.POST.get('title')
         description = request.POST.get('description')
 
+        author = request.user
+
+        response_data['author'] = author.username
         response_data['title'] = title
         response_data['description'] = description
 
         Article.objects.create(
-            author=request.user,
+            author=author,
             title = title,
             description = description,
             )
