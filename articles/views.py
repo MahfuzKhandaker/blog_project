@@ -58,7 +58,7 @@ def article_detail(request, pk):
     context = {
         'article': article,
         'comments': comments,
-        'total_comments': Comment.objects.count(),
+        'total_comments': article.comments.count(),
         # 'replies': comments.replies.all(),
     }
     return render(request, 'article_detail.html', context)
