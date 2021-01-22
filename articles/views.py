@@ -38,46 +38,27 @@ def create_article(request):
 def article_detail(request, pk):
     article = get_object_or_404(Article, pk=pk)
 
-    comments = Comment.objects.filter(article=article)
+    if request.method == 'POST':
+        comment_id = request.POST.get('comment_id')
+        comm = request.POST.get('comm')
 
-    # replies = Reply.objects.filter(comment=Comment.objects.get(pk=pk))
-
-    response_data = {}
-
-    # Comment Section
-    if request.POST.get('action') == 'post':
-        comment_text = request.POST.get('comment_text')
-        user=request.user
-        response_data['comment_text'] = comment_text
-        response_data['user'] = user.username
-
-        Comment.objects.create(
-            article=article,
-            user=user,
-            comment_text=comment_text,
-            )
-
-        # An HTTP response class that consumes data to be serialized to JSON.
-        return JsonResponse(response_data)
+        if comment_id:
+            Reply( user=request.user, 
+            comm=comm, 
+            comment = Comment.objects.get(id=int(comment_id))
+            ).save()
+        else:
+            Comment(article=article, user=request.user, comm=comm).save()
+        
+    comments = []
+    for c in Comment.objects.filter(article=article):
+        comments.append([c, Reply.objects.filter(comment=c)])
+    
 
     context = {
         'article': article,
         'comments': comments,
+        'total_comments': Comment.objects.count(),
         # 'replies': comments.replies.all(),
     }
     return render(request, 'article_detail.html', context)
-
-
-def reply_comment(request):
-    if request.method=='POST':
-        comment_id=request.POST['comment_id']
-        comment=Comment.objects.get(pk=comment_id)
-        reply_text = request.POST['reply_text']
-        
-
-        Reply.objects.create(
-            comment=comment,
-            user=request.user,
-            reply_text=reply_text,
-        )
-        return JsonResponse({'bool':True})

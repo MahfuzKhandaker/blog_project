@@ -20,27 +20,27 @@ class Article(models.Model):
 class Comment(models.Model):
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='comments')
     user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
-    comment_text = models.TextField()
+    comm = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ('-created_at',)
     
     def __str__(self):
-        return self.comment_text
+        return self.comm
 
 
 class Reply(models.Model):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='replies')
     user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
-    reply_text = models.TextField()
+    comm = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ('-created_at',)
     
     def __str__(self):
-        return self.reply_text
+        return self.comm
 
 
 # UpVotes

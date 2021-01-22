@@ -17,129 +17,84 @@
     </div>
     {% endif %}
     <hr>
-    
-    <!-- Comment Form -->
-    <div class="container pt-5">
-        <h1>Comment:</h1>
-        <form method="POST" id="comment-form">
-            {% csrf_token %}
-    
-            <div class="form-group">
-                    <label for="exampleInputEmail1">Text</label>
-                    <textarea class="form-control" id="comment-text" placeholder="Text"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
 
-        <hr>
-        <div class="row mb-2 comments">
-            {% for comment in comments %}
-                <div class="col-sm-12">
-                    <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                        <div class="col p-4 d-flex flex-column position-static">
-                            <h5 class="mb-0">{{comment.user.username}}</h5>
-                            <p class="mb-auto">{{comment.comment_text}}</p>
-                        </div>
-                    </div>
-                    <!-- Reply Section Start -->
-                <h3 class="my-4">Reply</h3>
-                <div class="reply-wrapper-{{comment.id}}">
-                    {% for reply in comment.replies.all %}
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <p>{{reply.reply_text}}</p>
-                            <p>
-                                <a href="#">{{reply.user}}</a>
-                            </p>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                <!-- Reply Form -->
-                <div class="card my-3">
-                    <h6 class="card-header">Add Reply</h6>
-                    <div class="card-body">
-                        <textarea class="form-control reply-text-{{comment.id}}"></textarea>
-                        <button type="button" data-comment="{{comment.id}}" class="btn btn-dark my-3 reply-comment">Submit</button>
-                    </div>
-                </div>
-    
-                {% endfor %}
-        </div>
+<div>
+    <h2 class="ml-5">{{total_comments}} Comments</h2>
+</div>
+
+<ul class="comment-list">
+    {% for cm in comments %}
+    <li class="comment">
+      <div class="vcard bio">
+        <img src="#" alt="Image placeholder">
+      </div>
+      <div class="comment-body">
+        <h3>{{cm.0.user.username}}</h3>
+        <div class="meta">{{cm.0.created_at}}</div>
+        <p>{{cm.0.comm}}</p>
+        <p id="{{cm.0.id}}"><button onclick="ReplyForm('{{cm.0.id}}')" class="reply">Reply</button></p>
+      </div>
+
+      <ul class="children">
+        {% for subc in cm.1 %}
+        <li class="comment">
+          <div class="vcard bio">
+            <img src="#" alt="Image placeholder">
+          </div>
+          <div class="comment-body">
+            <h3>{{subc.user.username}}</h3>
+            <div class="meta">{{subc.time}}</div>
+            <p>{{subc.comm}}</p>
+          </div>
+
+
+        </li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  
+  </ul>
+
+   <!-- END comment-list -->
+
+  <div class="comment-form-wrap pt-5">
+    <div class="section-title">
+      <h2 class="mb-5">Leave a comment</h2>
     </div>
-</div> 
+    <form method="POST" class="p-5 bg-light">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="message">Comment</label>
+        <textarea name="comm" id="message" cols="30" rows="3" class="form-control"></textarea>
+      </div>
+      <div class="form-group">
+        <input type="submit" value="Post Comment" class="btn btn-primary py-3">
+      </div>
+
+    </form>
+  </div>
+
+</div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     
-    <script>
-        $(document).on('submit', '#comment-form',function(e){
-            e.preventDefault();
-            $.ajax({
-                type:'POST',
-                url:'{% url "article_detail" article.pk %}',
-                data:{
-                    // name:$('#name').val(),
-                    comment_text:$('#comment-text').val(),
-                    csrfmiddlewaretoken:$('input[name=csrfmiddlewaretoken]').val(),
-                    action: 'post'
-                },
-                success:function(json){
-                    document.getElementById("comment-form").reset();
-                    $(".comments").prepend('<div class="col-sm-12">'+
-                        '<div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">' +
-                            '<div class="col p-4 d-flex flex-column position-static">' +
-                                '<h3 class="mb-0">' + json.user + '</h3>' +
-                                '<p class="mb-auto">' + json.comment_text + '</p>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' 
-                    )
-                },
-                error : function(xhr,errmsg,err) {
-                $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
-                    " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
-                console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
-            }
-            });
-        });
-        $(document).ready(function(){
-        $(".reply-comment").on('click',function(){
-            // var _name=$('#name').val();
-            var _comment_id=$(this).data('comment');
-            var _reply=$(".reply-text-"+_comment_id).val();
-            // Ajax
-            $.ajax({
-                url:'{% url "reply-comment" %}',
-                type:"post",
-                data:{
-                    reply_text:_reply,
-                    comment_id:_comment_id,
-                    csrfmiddlewaretoken:"{{csrf_token}}"
-                },
-                dataType:'json',
-                beforeSend:function(){
-                    $(".reply-comment").addClass('disabled').text('saving...');
-                },
-                success:function(res){
-                    if(res.bool==true){
-                        $(".reply-text-"+_comment_id).val('');
-                        // Append Element
-                        var _html='<div class="card mb-2 animate__animated animate__bounce">\
-                        <div class="card-body">\
-                            <p>'+_reply+'</p>\
-                            <p>\
-                                <a href="#">{{request.user}}</a>\
-                            </p>\
-                        </div>\
-                    </div>';
-                    $(".reply-wrapper-"+_comment_id).append(_html);
-                    var prevCount=$(".reply-count-"+_comment_id).text();
-                    $(".reply-count-"+_comment_id).text(parseInt(prevCount)+1);
-                    }
-                    $(".reply-comment").removeClass('disabled').text('Submit');
-                }
-            });
-        });
-    });
-    </script>
+<script type="text/javascript">
+    function ReplyForm(id) {
+      let elm = `<form method="POST" class="p-5 bg-light">
+                  {% csrf_token %}
+      <div class="form-group">
+      <input type='text' value='${id}' name = 'comment_id' style="display:none;" readonly/>
+        <label for="message">Comment</label>
+        <textarea name="comm" id="message" cols="30" rows="3" class="form-control"></textarea>
+      </div>
+      <div class="form-group">
+        <input type="submit" value="Reply" class="btn btn-primary py-3">
+      </div>
+
+    </form>`;
+    document.getElementById(id).innerHTML = elm;
+    }
+  </script>
+
 {% endblock %}
